@@ -115,7 +115,7 @@ function homeView() {
 	app.replaceChildren(
 		el('section', { class: 'hero' },
 			el('h1', {}, 'Student Assessment System'),
-			el('p', { class: 'subtitle' }, 'Give students points for the good things they do.'),
+			el('p', { class: 'subtitle' }, 'Give students points!'),
 			el('div', { class: 'row' },
 				link('/class', { class: 'btn btn-lg' }, 'View classes'),
 				link('/addClass', { class: 'btn btn-lg btn-primary' }, 'Create new class'),
