@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "classpoints-test",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["server.py", "--port", "8765", "--db", "C:/Users/bp_11/AppData/Local/Temp/claude/C--Users-bp-11--claude-spares-spare-mKrkDk/2129d09a-4694-45f3-83c4-9a2c06824f64/scratchpad/test.db"],
+      "port": 8765
+    }
+  ]
+}
