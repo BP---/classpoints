@@ -1,7 +1,7 @@
 """ClassPoints - a small web server for giving students points.
 
 Uses only the Python standard library: http.server for HTTP and sqlite3 for storage.
-Run with:  python server.py  [--host 127.0.0.1] [--port 8000]
+Run with:  python server.py  [--host 127.0.0.1] [--port 8007] [--open]
 The database file defaults to local.db and can be changed with DATABASE_URL.
 """
 
@@ -10,12 +10,17 @@ import json
 import mimetypes
 import os
 import re
+import socket
 import sqlite3
+import sys
+import threading
 import time
+import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from urllib.request import urlopen
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -295,12 +300,35 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
 
+class Server(ThreadingHTTPServer):
+    # On Windows, SO_REUSEADDR lets a second process bind a port that is already in
+    # use, so ask for exclusive use instead and fail cleanly if the port is taken.
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
+def is_classpoints_running(url):
+    try:
+        with urlopen(url + "/api/classes", timeout=2) as res:
+            return res.status == 200 and isinstance(json.load(res), list)
+    except Exception:  # noqa: BLE001 - anything else means "not us"
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="ClassPoints web server")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=8007)
     parser.add_argument("--db", help="SQLite database file (overrides DATABASE_URL)")
+    parser.add_argument("--open", action="store_true", help="open the app in the browser once the server is ready")
     args = parser.parse_args()
+
+    browse_host = "127.0.0.1" if args.host in ("0.0.0.0", "") else args.host
+    url = f"http://{browse_host}:{args.port}"
 
     global DB_PATH
     if args.db:
@@ -311,15 +339,32 @@ def main():
     mimetypes.add_type("image/svg+xml", ".svg")
 
     init_db()
-    httpd = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"ClassPoints running at http://{args.host}:{args.port}  (database: {DB_PATH})")
+    try:
+        httpd = Server((args.host, args.port), Handler)
+    except OSError as e:
+        if is_classpoints_running(url):
+            print(f"ClassPoints is already running at {url}")
+            if args.open:
+                webbrowser.open(url)
+            return 0
+        print(f"Could not start on port {args.port}: {e}")
+        print("Is another program using that port? Try a different one with --port.")
+        return 1
+
+    # The socket is listening now, so the browser's request will be answered
+    # as soon as serve_forever() starts below.
+    print(f"ClassPoints running at {url}  (database: {DB_PATH})")
+    print("Close this window or press Ctrl+C to stop the server.")
+    if args.open:
+        threading.Thread(target=webbrowser.open, args=(url,), daemon=True).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         print("\nShutting down.")
     finally:
         httpd.server_close()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -9,16 +9,29 @@ frontend is vanilla HTML/CSS/JS with no build step and no dependencies.
 
 Requires Python 3.9+.
 
-```sh
-python server.py
-```
+### Windows: double-click to start
 
-Then open http://127.0.0.1:8000.
+Double-click `start-classpoints.bat`. It starts the server on port 8007 and opens
+http://127.0.0.1:8007 in your default browser as soon as the server is ready. Close the
+black server window to stop the app. Starting it again while it is already running just
+opens the page again.
+
+For a desktop shortcut: right-click `start-classpoints.bat` → *Show more options* →
+*Send to* → *Desktop (create shortcut)*. The .bat finds the project folder by itself, so
+the shortcut keeps working wherever the project is, as long as it points to the .bat. If
+you copy the .bat file itself somewhere else instead, edit the `PROJECT_DIR` line in it.
+
+### From a terminal
+
+```sh
+python server.py --open
+```
 
 Options:
 
+- `--open` to open the app in the browser once the server is ready
+- `--port 8080` to use another port (default 8007)
 - `--host 0.0.0.0` to make it reachable from other machines on the network
-- `--port 8080` to use another port
 - `--db path/to/file.db` (or the `DATABASE_URL` environment variable) to choose the
   database file. Defaults to `local.db` next to `server.py`; it is created automatically.
 
