@@ -1,4 +1,13 @@
 @echo off
+
+rem Always run inside a clean cmd.exe, even when started from PowerShell or
+rem another shell. /d skips any cmd AutoRun scripts; the marker argument stops
+rem the script from relaunching itself again.
+if /i not "%~1"=="--in-cmd" (
+    "%SystemRoot%\System32\cmd.exe" /d /c ""%~f0" --in-cmd"
+    exit /b
+)
+
 setlocal
 
 rem ---------------------------------------------------------------------------
@@ -22,8 +31,9 @@ cd /d "%PROJECT_DIR%" || (
 
 rem Prefer the Python launcher (py), fall back to python on PATH.
 set "PYTHON="
-where py >nul 2>nul && set "PYTHON=py -3"
-if not defined PYTHON where python >nul 2>nul && set "PYTHON=python"
+set "WHERE=%SystemRoot%\System32\where.exe"
+"%WHERE%" py >nul 2>nul && set "PYTHON=py -3"
+if not defined PYTHON "%WHERE%" python >nul 2>nul && set "PYTHON=python"
 if not defined PYTHON (
     echo Python was not found. Install it from https://www.python.org/downloads/
     echo and tick "Add python.exe to PATH" during installation.
